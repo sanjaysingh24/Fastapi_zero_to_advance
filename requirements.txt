@@ -7,3 +7,5 @@ SQLAlchemy
 psycopg[binary]
 pyjwt
 pwdlib[argon2]
+alembic
+fastapi-mail

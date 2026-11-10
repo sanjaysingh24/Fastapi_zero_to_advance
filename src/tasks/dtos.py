@@ -17,3 +17,4 @@ class taskResponse(BaseModel):
     title:str
     description:str
     is_completed:bool
+    userId:int | None=None

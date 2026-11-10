@@ -10,23 +10,23 @@ task_routes = APIRouter(prefix="/tasks",tags=["Tasks"])
 
 @task_routes.post("/create",response_model=taskResponse,status_code=status.HTTP_201_CREATED)
 def task_create(data:taskSchema,db:Session=Depends(get_db),user:UserModel=Depends(is_auth)):
-    return create_task(data,db)
+    return create_task(data,db,user)
 
 
 @task_routes.get("/alltask",response_model=List[taskResponse], status_code=status.HTTP_200_OK)
-def getAll_task(db:Session=Depends(get_db)):
-    return get_task(db)
+def getAll_task(db:Session=Depends(get_db),user:UserModel=Depends(is_auth)):
+    return get_task(db,user)
 
 @task_routes.get("/getsingle/{task_id}", response_model=taskResponse,status_code=status.HTTP_200_OK)
-def getsingle_task(task_id:int,db:Session=Depends(get_db)):
+def getsingle_task(task_id:int,db:Session=Depends(get_db),user:UserModel=Depends(is_auth)):
     return get_single_task(task_id,db)
 
 @task_routes.patch("/updatetask/{task_id}",response_model=taskResponse,status_code=status.HTTP_201_CREATED)
-def taskupdates(task_id:int,task_data:taskupdate,db:Session=Depends(get_db)):
-    return update_task(task_id,task_data,db)
+def taskupdates(task_id:int,task_data:taskupdate,db:Session=Depends(get_db),user:UserModel=Depends(is_auth)):
+    return update_task(task_id,task_data,db,user)
 
 
 @task_routes.delete("/deletetask/{task_id}",response_model=None,status_code=status.HTTP_204_NO_CONTENT)
 
-def taskdelete(task_id:int,db:Session=Depends(get_db)):
-    return delete_task(task_id,db)
+def taskdelete(task_id:int,db:Session=Depends(get_db),user:UserModel=Depends(is_auth)):
+    return delete_task(task_id,db,user)

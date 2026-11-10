@@ -1,10 +1,11 @@
 from src.users.dtos import UserSchema,LoginSchema
 from sqlalchemy.orm import Session
-from fastapi import HTTPException,status,Request
+from fastapi import HTTPException,status,Request,BackgroundTasks
 from pwdlib import PasswordHash
 from src.users.models import UserModel
 from src.utils.settings import settings
 from datetime import datetime,timedelta
+from src.utils.mail import send_email
 from jwt.exceptions import InvalidTokenError
 import jwt
 
@@ -17,7 +18,7 @@ def verify_password(plain_password, hashed_password):
     return password_hash.verify(plain_password, hashed_password)
 
 
-def register(body: UserSchema, db: Session):
+async def register(body: UserSchema, db: Session,bg_task:BackgroundTasks):
 
     is_user = db.query(UserModel).filter(UserModel.username == body.username).first()
     if is_user:
@@ -35,6 +36,9 @@ def register(body: UserSchema, db: Session):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+   
+    bg_task.add_task(send_email,[new_user.email])
+    
     return new_user
 
 
@@ -49,7 +53,7 @@ def login_user(body:LoginSchema,db:Session):
     is_password = verify_password(body.password,is_username.hash_password)
     if not is_password:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid Credentials")
-    exp_time=datetime.now() + timedelta(seconds=40)
+    exp_time=datetime.now() + timedelta(minutes=settings.EXP_TIME)
     
     token = jwt.encode({"_id":is_username.id,"exp":exp_time.timestamp()},settings.SECRET_KEY,settings.ALGORITHM)
     

@@ -2,15 +2,17 @@ from src.tasks.dtos import taskSchema,taskupdate
 from sqlalchemy.orm import Session
 from src.tasks.models import TaskModel
 from fastapi import HTTPException
+from src.users.models import UserModel
 
 
-def create_task(data: taskSchema, db: Session):
+def create_task(data: taskSchema, db: Session,user:UserModel):
 
     body_data = data.model_dump()
     new_task = TaskModel(
         title=body_data["title"],
         description=body_data["description"],
         is_completed=body_data["is_completed"],
+        userId=user.id
     )
     db.add(new_task)
     db.commit()
@@ -18,8 +20,8 @@ def create_task(data: taskSchema, db: Session):
     return new_task
 
 
-def get_task(db:Session):
-    tasks = db.query(TaskModel).all()
+def get_task(db:Session,user:UserModel):
+    tasks = db.query(TaskModel).filter(TaskModel.userId==user.id)
     return tasks
 
 
@@ -31,12 +33,14 @@ def get_single_task(Task_id:int,db:Session):
     return one_task
 
 
-def update_task(task_id:int,task_data:taskupdate,db:Session):
+def update_task(task_id:int,task_data:taskupdate,db:Session,user:UserModel):
     '''check task id is correct or not'''
-    check_task = db.query(TaskModel).get(task_id)
+    check_task:TaskModel = db.query(TaskModel).get(task_id)
     if not check_task:
         raise HTTPException(404,detail="Task not found")
     # update the task
+    if check_task.userId!=user.id:
+        raise HTTPException(401,detail="You are not allowed to update this task")
     updated_data = task_data.model_dump()
     for key,value in updated_data.items():
         setattr(check_task,key,value)
@@ -47,11 +51,12 @@ def update_task(task_id:int,task_data:taskupdate,db:Session):
     
     return check_task
 
-def delete_task(task_id:int,db:Session):
-    find_task = db.query(TaskModel).get(task_id)
+def delete_task(task_id:int,db:Session,user:UserModel):
+    find_task:TaskModel = db.query(TaskModel).get(task_id)
     if not find_task:
         raise HTTPException(404,detail="Task Id Not Found")
-    
+    if find_task.userId!=user.id:
+        raise HTTPException(401,detail="You are not allowed to delete this task")
     db.delete(find_task)
     db.commit()
     
